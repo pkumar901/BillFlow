@@ -1,0 +1,4 @@
+# Local development secrets for the BillFlow Worker (wrangler dev reads this file).
+# Copy to `.dev.vars` (which is git-ignored) and change the value.
+# In production set the real secret with:  npx wrangler secret put JWT_SECRET
+JWT_SECRET=dev-only-change-me-to-a-long-random-string

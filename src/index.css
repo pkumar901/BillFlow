@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 175 77% 26%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 175 60% 95%;
+    --accent-foreground: 175 77% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 175 77% 26%;
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(214 20% 80%);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  /* ---- data tables ---------------------------------------------------- */
+  .data-table {
+    @apply w-full text-left text-sm;
+  }
+  .data-table thead th {
+    @apply bg-muted/60 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+  .data-table tbody td {
+    @apply border-t border-border px-3 py-2.5 align-middle;
+  }
+  .data-table tbody tr:hover {
+    @apply bg-muted/40;
+  }
+
+  /* ---- A4 invoice sheet ----------------------------------------------- */
+  .invoice-sheet {
+    width: 210mm;
+    min-height: 296mm;
+    padding: 10mm;
+    background: #ffffff;
+    color: #111827;
+    font-size: 12px;
+    line-height: 1.45;
+    margin: 0 auto;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.08);
+  }
+
+  .invoice-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  @media screen and (max-width: 860px) {
+    .invoice-sheet {
+      width: 100%;
+      min-height: auto;
+      padding: 16px;
+    }
+  }
+}
+
+/* ---- print ------------------------------------------------------------ */
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    font-size: 11px;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-root {
+    position: absolute !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .invoice-sheet {
+    width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+  .invoice-sheet table,
+  .invoice-sheet tr,
+  .invoice-sheet td,
+  .invoice-sheet th {
+    page-break-inside: avoid;
+  }
+}
+
+.print-only {
+  display: none;
+}

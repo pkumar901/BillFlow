@@ -1,0 +1,44 @@
+# Cloudflare Workers configuration for BillFlow.
+#
+# Replace <CLOUDFLARE_D1_DATABASE_ID> with the real database id (find it with:
+#   npx wrangler d1 list
+# ). Never commit real secrets - put JWT_SECRET with:
+#   npx wrangler secret put JWT_SECRET
+
+name = "billflow"
+main = "worker/src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+# TypeScript config used when bundling the Worker (resolves the ~shared/* alias).
+tsconfig = "./tsconfig.worker.json"
+
+# ---------------------------------------------------------------------------
+# D1 database binding - the Worker accesses it exclusively through env.DB
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "billflow-db"
+database_id = "<CLOUDFLARE_D1_DATABASE_ID>"
+
+# ---------------------------------------------------------------------------
+# Environment variables (non-secret). Secrets go to `wrangler secret put`.
+# ---------------------------------------------------------------------------
+[vars]
+# Comma separated list of allowed browser origins for the API (dev server).
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8787,http://127.0.0.1:8787"
+# When "true", e-mail verification / password reset links are returned in the
+# API response instead of being sent by mail. Set to "false" in production and
+# wire up an e-mail provider (see README).
+DEMO_AUTH_LINKS = "true"
+
+# ---------------------------------------------------------------------------
+# Static assets: the built React app (dist/) + the Worker API on one origin
+# ---------------------------------------------------------------------------
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[dev]
+port = 8787
