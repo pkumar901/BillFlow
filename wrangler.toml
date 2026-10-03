@@ -18,7 +18,7 @@ tsconfig = "./tsconfig.worker.json"
 [[d1_databases]]
 binding = "DB"
 database_name = "billflow-db"
-database_id = "<CLOUDFLARE_D1_DATABASE_ID>"
+database_id = "32f4ccb2-be20-4a17-81d8-f8d16a454ee9"
 
 # ---------------------------------------------------------------------------
 # Environment variables (non-secret). Secrets go to `wrangler secret put`.
