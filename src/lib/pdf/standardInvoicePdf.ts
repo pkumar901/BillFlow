@@ -431,8 +431,10 @@ export function buildStandardInvoicePdf(
   const terms = invoice.terms || settings.default_terms || "";
   const termLines = terms.trim() ? lines(terms.replace(/\n+/g, "  "), CW - 4).slice(0, 6) : [];
   const notesLines = invoice.notes ? lines(invoice.notes, CW - 4).slice(0, 4) : [];
-  const notesH = notesLines.length ? notesLines.length * 3.6 + 7 : 0;
-  const reserve = summaryH + bankH + termLines.length * 3.6 + notesH + 14;
+  // each block draws a 4.4mm lead-in gap, its lines, then a 6mm tail
+  const termH = termLines.length ? termLines.length * 3.6 + 10.4 : 0;
+  const notesH = notesLines.length ? notesLines.length * 3.6 + 10.4 : 0;
+  const reserve = summaryH + bankH + termH + notesH + FOOTER_STRIP;
 
   const naturalY = y + 2;
   const anchorY = 214.1; // where the reference totals block starts
@@ -577,7 +579,7 @@ export function buildStandardInvoicePdf(
   for (let page = 1; page <= pages; page += 1) {
     doc.setPage(page);
     const bottom = Math.min(
-      Math.max(FOOTER_BOTTOM, (pageBottoms[page] ?? FOOTER_BOTTOM) + 6),
+      Math.max(FOOTER_BOTTOM, (pageBottoms[page] ?? FOOTER_BOTTOM) + FOOTER_STRIP),
       FRAME_MAX,
     );
 

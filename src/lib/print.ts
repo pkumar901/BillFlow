@@ -32,7 +32,7 @@ export function printNode(node: HTMLElement, title: string): void {
 <title>${escapeHtml(title)}</title>
 ${collectStyles()}
 <style>
-  @page { size: A4; margin: 10mm; }
+  @page { size: A4; margin: 8.5mm; }
   html, body { margin: 0; padding: 0; background: #fff; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .invoice-sheet { box-shadow: none !important; width: 100% !important; min-height: auto !important; padding: 0 !important; margin: 0 !important; }

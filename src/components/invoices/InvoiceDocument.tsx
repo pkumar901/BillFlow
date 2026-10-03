@@ -76,7 +76,7 @@ export function InvoiceDocument({
       <header
         className={cn(
           "mb-3 flex items-start justify-between gap-4 pb-3",
-          filledHeader ? "-mx-[10mm] -mt-[10mm] px-[10mm] pt-[8mm] pb-4" : "border-b-2",
+          filledHeader ? "-mx-[8.5mm] -mt-[8.5mm] px-[8.5mm] pt-[8mm] pb-4" : "border-b-2",
         )}
         style={
           filledHeader

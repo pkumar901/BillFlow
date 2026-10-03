@@ -95,6 +95,11 @@ hot-reloaded automatically).
 
 Schema files live in `migrations/` and are applied by Wrangler in filename order.
 
+| File | Purpose |
+| --- | --- |
+| `001_initial_schema.sql` | Core schema (users, business, customers, products, invoices, items, payments, settings) |
+| `002_invoice_shipping_address.sql` | Adds the optional `shipping_address` fill-up column to `invoices` |
+
 ```bash
 # apply to local dev DB (data lives under .wrangler/state/v3/d1)
 npx wrangler d1 migrations apply billflow-db --local
@@ -235,10 +240,18 @@ Request/response conventions:
 - **Invoices** — line items with per-line discount + GST rate, intra-state
   CGST/SGST vs inter-state IGST by place of supply, invoice-level discount,
   round-off option, Indian amount-in-words, `PREFIX-0001` numbering with a
-  monotonic counter, status: Draft / Unpaid / Partial / Paid / Overdue / Cancelled.
-- **Preview & output** — "TAX INVOICE" preview, 4 templates (Classic, Modern,
-  Minimal, Professional) with accent colour, PDF download (jsPDF, embedded fonts),
-  print, CSV export, share via WhatsApp / e-mail / copy link.
+  monotonic counter, status: Draft / Unpaid / Partial / Paid / Overdue /
+  Cancelled, an **optional shipping address** (fill-up field, saved per invoice)
+  and a **State Code** shown on every invoice layout in place of the due date
+  (the due date still drives Overdue status from the invoice form).
+- **Preview & output** — "TAX INVOICE" preview, 5 templates (Standard, Classic,
+  Modern, Minimal, Professional) with accent colour, PDF download (jsPDF,
+  embedded fonts), print, CSV export, share via WhatsApp / e-mail / copy link.
+  The **Standard** template is a ruled A4 tax-invoice grid: bordered frame,
+  divider-only item table (no row rules), totals band, bank + authorisation
+  block, footer cell with a "Powered by BillFlow" divider, and two closing lines
+  below the frame (accent-coloured footer text + page counter / signature note).
+  Page geometry matches A4 with 8.5 mm margins.
 - **Payments** — record against an invoice, ledger, refunds/removals, balances.
 - **Dashboard** — sales, received, pending, GST collected, recent activity — all
   computed by SQL.

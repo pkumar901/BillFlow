@@ -83,7 +83,7 @@ export function StandardInvoice({
       style={{ ["--invoice-accent" as string]: accent }}
       data-invoice-sheet
     >
-      <div className="flex min-h-[265mm] flex-col border-[2.67px] border-neutral-900 text-neutral-900">
+      <div className="flex min-h-[270mm] flex-col border-[2.67px] border-neutral-900 text-neutral-900">
         {/* ------------------------------------------------------ title --- */}
         <header className="flex items-center border-b-[2.67px] border-neutral-900 px-1.5 py-1">
           <span className="w-1/3" />

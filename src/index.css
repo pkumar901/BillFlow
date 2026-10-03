@@ -76,7 +76,7 @@
   .invoice-sheet {
     width: 210mm;
     min-height: 296mm;
-    padding: 10mm;
+    padding: 8.5mm;
     background: #ffffff;
     color: #111827;
     font-size: 12px;
@@ -102,7 +102,7 @@
 /* ---- print ------------------------------------------------------------ */
 @page {
   size: A4;
-  margin: 10mm;
+  margin: 8.5mm;
 }
 
 @media print {
