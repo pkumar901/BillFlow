@@ -71,6 +71,7 @@ export async function seedDemoData(businessState: string): Promise<{ created: nu
     due_date: iso(-8),
     place_of_supply: state,
     reference_number: "PO-DEMO-001",
+    po_date: iso(3),
     payment_terms: "10 Days",
     notes: "Demo invoice created by BillFlow sample data.",
     items: [

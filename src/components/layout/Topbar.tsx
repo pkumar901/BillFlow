@@ -118,7 +118,7 @@ export function Topbar({ onOpenMobile }: { onOpenMobile: () => void }) {
                     {invoice.invoice_number} · {formatINR(invoice.balance_due)}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {invoice.customer_name} · due {formatDate(invoice.due_date)} ·{" "}
+                    {invoice.customer_name} · PO {formatDate(invoice.po_date)} ·{" "}
                     {statusLabel(invoice.display_status)}
                   </span>
                 </DropdownMenuItem>

@@ -254,7 +254,13 @@ export function buildStandardInvoicePdf(
   rule(MID, rowB + 11.6, FR, 0.5);
   vrule(SUB, rowA, rowB, 0.5);
 
-  let ry = rowB + 11.6;
+  const rowC = rowB + 11.6;
+  metaLabel("PO:", invoice.reference_number || "—", MID + 1.6, rowC);
+  metaLabel("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "—", SUB + 1.5, rowC);
+  rule(MID, rowC + 11.6, FR, 0.5);
+  vrule(SUB, rowB, rowC, 0.5);
+
+  let ry = rowC + 11.6;
   const shippingParts = shippingAddressLines(invoice, customer);
 
   if (shippingParts.length > 0) {
@@ -273,12 +279,6 @@ export function buildStandardInvoicePdf(
   }
 
   setDark();
-  setFont("bold", 8.1);
-  doc.text("Reference:", MID + 1.6, ry + 3.4);
-  const referenceX = MID + 1.6 + doc.getTextWidth("Reference:") + 2.5;
-  setFont("normal", 8.1);
-  doc.text(invoice.reference_number || "—", referenceX, ry + 3.4);
-  ry += 6.6;
   if (invoice.payment_terms) {
     setFont("bold", 8.1);
     doc.text("Payment Terms:", MID + 1.6, ry + 3.4);

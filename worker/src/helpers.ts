@@ -93,7 +93,7 @@ export async function getInvoiceSettings(env: Env, businessId: string): Promise<
 }
 
 export const DEFAULT_TERMS = [
-  "Payment is due as per the due date mentioned on this invoice.",
+  "Payment is due as per the terms mentioned on this invoice.",
   "Goods once sold are subject to the terms agreed between the parties.",
   "Any dispute is subject to the applicable jurisdiction agreed by the parties.",
 ].join("\n");

@@ -288,7 +288,7 @@ export function registerReportRoutes(router: Router): void {
     const day = today();
 
     const rows = await env.DB.prepare(
-      `SELECT i.id, i.invoice_number, i.invoice_date, i.due_date, c.name AS customer_name,
+      `SELECT i.id, i.invoice_number, i.invoice_date, i.due_date, i.po_date, c.name AS customer_name,
               i.grand_total, i.amount_paid, i.balance_due, i.payment_status,
               CASE WHEN i.due_date IS NOT NULL AND i.due_date < ?
                    THEN CAST(ROUND(julianday(?) - julianday(i.due_date)) AS INTEGER) ELSE 0 END AS days_overdue

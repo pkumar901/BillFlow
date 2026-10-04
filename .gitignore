@@ -21,3 +21,5 @@ scripts/ref_bottom.png
 scripts/ref_rowcrop.png
 scripts/ref_detail.txt
 scripts/ref_rules_full.txt
+scripts/new_pdf/
+scripts/inspect_pdf.py

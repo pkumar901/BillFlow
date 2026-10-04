@@ -164,7 +164,8 @@ export function InvoiceDocument({
           label="Place of Supply"
           value={invoice.place_of_supply || customer.place_of_supply || customer.state || "—"}
         />
-        <Meta label="Reference / PO" value={invoice.reference_number || "—"} />
+        <Meta label="PO" value={invoice.reference_number || "—"} />
+        <Meta label="PO Date" value={invoice.po_date ? formatDate(invoice.po_date) : "—"} />
         <Meta label="Payment Terms" value={invoice.payment_terms || "—"} />
         <Meta label="Customer GSTIN" value={customer.gstin || "—"} />
         <Meta label="Supply Type" value={interstate ? "Inter-state (IGST)" : "Intra-state (CGST/SGST)"} />

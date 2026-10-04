@@ -216,11 +216,11 @@ export function ReportsPage() {
 
   const exportOutstanding = (kind: "csv" | "pdf") => {
     if (!outstanding) return;
-    const headers = ["Invoice", "Date", "Due", "Customer", "Total", "Paid", "Balance", "Status", "Days overdue"];
+    const headers = ["Invoice", "Date", "PO Date", "Customer", "Total", "Paid", "Balance", "Status", "Days overdue"];
     const rows = outstanding.items.map((row) => [
       row.invoice_number,
       formatDate(row.invoice_date),
-      row.due_date ? formatDate(row.due_date) : "-",
+      row.po_date ? formatDate(row.po_date) : "-",
       row.customer_name,
       formatINR(row.grand_total),
       formatINR(row.amount_paid),
@@ -591,7 +591,7 @@ export function ReportsPage() {
                   <tr>
                     <th>Invoice</th>
                     <th>Customer</th>
-                    <th>Due date</th>
+                    <th>PO Date</th>
                     <th className="text-right">Balance</th>
                     <th>Status</th>
                     <th className="text-right">Days overdue</th>
@@ -602,7 +602,7 @@ export function ReportsPage() {
                     <tr key={row.id}>
                       <td className="font-medium">{row.invoice_number}</td>
                       <td className="max-w-[200px] truncate">{row.customer_name}</td>
-                      <td>{row.due_date ? formatDate(row.due_date) : "—"}</td>
+                      <td>{row.po_date ? formatDate(row.po_date) : "—"}</td>
                       <td className="text-right font-medium text-destructive">{formatINR(row.balance_due)}</td>
                       <td>
                         <StatusBadge status={row.payment_status} />

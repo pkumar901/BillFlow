@@ -153,6 +153,13 @@ export function StandardInvoice({
               {metaCell("State Code:", stateCode)}
             </div>
 
+            <div className="grid grid-cols-2 border-b-[1.92px] border-neutral-900">
+              <div className="border-r-[1.92px] border-neutral-900">
+                {metaCell("PO:", invoice.reference_number || "—")}
+              </div>
+              {metaCell("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "—")}
+            </div>
+
             <div className="px-1.5 py-2 text-[10.8px] leading-[13.5px]">
               {showShipping && (
                 <div className="mb-1.5">
@@ -162,10 +169,6 @@ export function StandardInvoice({
                   ))}
                 </div>
               )}
-              <div>
-                <span className="font-semibold">Reference: </span>
-                {invoice.reference_number || "—"}
-              </div>
               {invoice.payment_terms && (
                 <div>
                   <span className="font-semibold">Payment Terms: </span>

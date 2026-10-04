@@ -359,7 +359,11 @@ export function InvoiceViewPage() {
                   value={shippingAddressLines(invoice, customer).join(", ")}
                 />
               )}
-              <Row label="Reference / PO" value={invoice.reference_number || "—"} />
+              <Row label="PO" value={invoice.reference_number || "—"} />
+              <Row
+                label="PO Date"
+                value={invoice.po_date ? formatDate(invoice.po_date) : "—"}
+              />
               <Row label="Created" value={formatDateTime(invoice.created_at)} />
             </div>
           </section>

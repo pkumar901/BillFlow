@@ -242,8 +242,11 @@ Request/response conventions:
   round-off option, Indian amount-in-words, `PREFIX-0001` numbering with a
   monotonic counter, status: Draft / Unpaid / Partial / Paid / Overdue /
   Cancelled, an **optional shipping address** (fill-up field, saved per invoice)
-  and a **State Code** shown on every invoice layout in place of the due date
-  (the due date still drives Overdue status from the invoice form).
+  and a **State Code** shown on every invoice layout, plus **PO** (the customer's
+  purchase-order number) and **PO Date** in the header meta block — the old
+  editable "Due date" field is gone from the form, reports and layouts (an
+  internal due date is still derived from *Default due days* so Overdue status
+  keeps working).
 - **Preview & output** — "TAX INVOICE" preview, 5 templates (Standard, Classic,
   Modern, Minimal, Professional) with accent colour, PDF download (jsPDF,
   embedded fonts), print, CSV export, share via WhatsApp / e-mail / copy link.

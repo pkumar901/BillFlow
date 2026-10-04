@@ -116,7 +116,10 @@ export interface Invoice {
   invoice_date: string;
   due_date: string | null;
   place_of_supply: string | null;
+  /** customer purchase-order number (shown as "PO" on the invoice) */
   reference_number: string | null;
+  /** customer purchase-order date (shown as "PO Date") */
+  po_date: string | null;
   payment_terms: string | null;
   /** optional invoice-level override; falls back to the customer's shipping address */
   shipping_address: string | null;
@@ -222,6 +225,7 @@ export interface CreateInvoicePayload {
   due_date?: string | null;
   place_of_supply?: string | null;
   reference_number?: string | null;
+  po_date?: string | null;
   payment_terms?: string | null;
   shipping_address?: string | null;
   notes?: string | null;
@@ -321,6 +325,7 @@ export interface OutstandingRow {
   invoice_number: string;
   invoice_date: string;
   due_date: string | null;
+  po_date: string | null;
   customer_name: string;
   grand_total: number;
   amount_paid: number;

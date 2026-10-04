@@ -47,7 +47,7 @@ export function addressLines(parts: Array<string | null | undefined>): string[] 
 }
 
 /**
- * Two-digit GST state code shown on the invoice (replaces the due date).
+ * Two-digit GST state code shown on the invoice.
  * Place of supply first, then the recipient's GSTIN/state, then the seller's.
  */
 export function stateCodeOf(invoice: Invoice, customer: Customer, business: Business): string {

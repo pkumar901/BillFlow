@@ -57,6 +57,7 @@ interface FormState {
   due_date: string;
   place_of_supply: string;
   reference_number: string;
+  po_date: string;
   payment_terms: string;
   shipping_address: string;
   notes: string;
@@ -72,6 +73,7 @@ const EMPTY_FORM: FormState = {
   due_date: "",
   place_of_supply: "",
   reference_number: "",
+  po_date: "",
   payment_terms: "",
   shipping_address: "",
   notes: "",
@@ -197,6 +199,7 @@ export function InvoiceFormPage() {
             due_date: detail.invoice.due_date ?? "",
             place_of_supply: detail.invoice.place_of_supply ?? "",
             reference_number: detail.invoice.reference_number ?? "",
+            po_date: detail.invoice.po_date ?? "",
             payment_terms: detail.invoice.payment_terms ?? "",
             shipping_address: detail.invoice.shipping_address ?? "",
             notes: detail.invoice.notes ?? "",
@@ -293,6 +296,7 @@ export function InvoiceFormPage() {
       due_date: form.due_date || null,
       place_of_supply: form.place_of_supply || null,
       reference_number: form.reference_number || null,
+      po_date: form.po_date || null,
       payment_terms: form.payment_terms || null,
       shipping_address: form.shipping_address.trim() || null,
       subtotal: result.subtotal,
@@ -388,6 +392,7 @@ export function InvoiceFormPage() {
     due_date: form.due_date || null,
     place_of_supply: form.place_of_supply || null,
     reference_number: form.reference_number || null,
+    po_date: form.po_date || null,
     payment_terms: form.payment_terms || null,
     shipping_address: form.shipping_address.trim() || null,
     notes: form.notes || null,
@@ -521,12 +526,12 @@ export function InvoiceFormPage() {
                   onChange={(event) => setField("invoice_date")(event.target.value)}
                 />
               </Field>
-              <Field label="Due date" htmlFor="inv-due" hint="Drives the Overdue status">
+              <Field label="PO Date" htmlFor="inv-po-date" hint="Customer purchase-order date">
                 <Input
-                  id="inv-due"
+                  id="inv-po-date"
                   type="date"
-                  value={form.due_date}
-                  onChange={(event) => setField("due_date")(event.target.value)}
+                  value={form.po_date}
+                  onChange={(event) => setField("po_date")(event.target.value)}
                 />
               </Field>
               <Field label="Place of supply" htmlFor="inv-pos" hint="Same state = CGST/SGST, other = IGST">
@@ -543,7 +548,7 @@ export function InvoiceFormPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Reference / PO number" htmlFor="inv-ref">
+              <Field label="PO number" htmlFor="inv-ref">
                 <Input
                   id="inv-ref"
                   value={form.reference_number}

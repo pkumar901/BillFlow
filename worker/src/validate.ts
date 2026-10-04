@@ -276,6 +276,7 @@ export const invoiceSchema = z.object({
   due_date: optionalDate,
   place_of_supply: optionalTrimmed(80),
   reference_number: optionalTrimmed(120),
+  po_date: optionalDate,
   payment_terms: optionalTrimmed(300),
   shipping_address: optionalTrimmed(600),
   notes: optionalTrimmed(2000),

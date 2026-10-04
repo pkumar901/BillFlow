@@ -251,10 +251,10 @@ function invoiceStatements(
 ): ReturnType<typeof env.DB.prepare> {
   return env.DB.prepare(
     `INSERT INTO invoices (id, business_id, customer_id, invoice_number, invoice_date, due_date,
-      place_of_supply, reference_number, payment_terms, shipping_address, subtotal, discount,
+      place_of_supply, reference_number, po_date, payment_terms, shipping_address, subtotal, discount,
       discount_type, discount_value, taxable_amount, cgst, sgst, igst, cess, round_off, grand_total,
       amount_paid, balance_due, payment_status, interstate, notes, terms, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     values["id"],
     values["business_id"],
@@ -264,6 +264,7 @@ function invoiceStatements(
     values["due_date"],
     values["place_of_supply"],
     values["reference_number"],
+    values["po_date"],
     values["payment_terms"],
     values["shipping_address"],
     values["subtotal"],
@@ -352,6 +353,7 @@ function invoiceValues(
     due_date: input.due_date ?? null,
     place_of_supply: input.place_of_supply || null,
     reference_number: trimOrNull(input.reference_number),
+    po_date: input.po_date ?? null,
     payment_terms: trimOrNull(input.payment_terms),
     shipping_address: trimOrNull(input.shipping_address),
     notes: trimOrNull(input.notes),
@@ -582,7 +584,7 @@ export function registerInvoiceRoutes(router: Router): void {
     await env.DB.batch([
       env.DB.prepare(
         `UPDATE invoices SET customer_id = ?, invoice_number = ?, invoice_date = ?, due_date = ?,
-          place_of_supply = ?, reference_number = ?, payment_terms = ?, shipping_address = ?,
+          place_of_supply = ?, reference_number = ?, po_date = ?, payment_terms = ?, shipping_address = ?,
           subtotal = ?, discount = ?, discount_type = ?, discount_value = ?, taxable_amount = ?,
           cgst = ?, sgst = ?, igst = ?, cess = ?, round_off = ?, grand_total = ?, amount_paid = ?,
           balance_due = ?, payment_status = ?, interstate = ?, notes = ?, terms = ?, updated_at = ?
@@ -594,6 +596,7 @@ export function registerInvoiceRoutes(router: Router): void {
         values["due_date"],
         values["place_of_supply"],
         values["reference_number"],
+        values["po_date"],
         values["payment_terms"],
         values["shipping_address"],
         values["subtotal"],
