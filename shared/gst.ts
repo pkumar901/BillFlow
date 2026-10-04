@@ -35,6 +35,13 @@ export interface CalcItemInput {
   quantity: number;
   unit: string;
   gst_rate: number;
+  /**
+   * Optional explicit intra-state split. When both are supplied the tax is
+   * derived from these two rates instead of halving `gst_rate`, so a manually
+   * entered CGST% / SGST% is honoured exactly. Defaults to equal halves.
+   */
+  cgst_rate?: number | null;
+  sgst_rate?: number | null;
   /** Cess as a percentage of taxable value (usually 0). */
   cess_rate?: number;
   discount_type?: DiscountType;
@@ -63,6 +70,8 @@ export interface CalcItemOutput {
   rate: number;
   quantity: number;
   gst_rate: number;
+  cgst_rate: number;
+  sgst_rate: number;
   cess_rate: number;
   base_amount: number;
   discount: number;
@@ -94,6 +103,8 @@ export interface InvoiceCalcResult {
   gross_total: number;
   round_off: number;
   grand_total: number;
+  /** whether the grand total was rounded to the nearest rupee */
+  round_to_rupee: boolean;
 }
 
 export class CalculationError extends Error {}
@@ -117,6 +128,21 @@ function validateItem(item: CalcItemInput, position: number): void {
   if (!(item.quantity > 0)) throw new CalculationError(`${label}: quantity must be greater than zero.`);
   if (item.gst_rate < 0 || item.gst_rate > 100) {
     throw new CalculationError(`${label}: GST rate must be between 0 and 100.`);
+  }
+  const explicitSplit =
+    typeof item.cgst_rate === "number" && typeof item.sgst_rate === "number";
+  if (explicitSplit) {
+    assertFinite(item.cgst_rate as number, `${label}: CGST rate`);
+    assertFinite(item.sgst_rate as number, `${label}: SGST rate`);
+    if ((item.cgst_rate as number) < 0 || (item.cgst_rate as number) > 100) {
+      throw new CalculationError(`${label}: CGST rate must be between 0 and 100.`);
+    }
+    if ((item.sgst_rate as number) < 0 || (item.sgst_rate as number) > 100) {
+      throw new CalculationError(`${label}: SGST rate must be between 0 and 100.`);
+    }
+    if ((item.cgst_rate as number) + (item.sgst_rate as number) > 100) {
+      throw new CalculationError(`${label}: CGST + SGST cannot exceed 100%.`);
+    }
   }
   const cessRate = item.cess_rate ?? 0;
   if (cessRate < 0 || cessRate > 100) {
@@ -228,15 +254,20 @@ export function calculateInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
-    if (tax > 0) {
-      if (interstate) {
-        igst = tax;
-      } else {
-        const halves = splitEqual(tax);
-        cgst = toPaisa(halves.cgst);
-        sgst = toPaisa(halves.sgst);
-      }
+    if (interstate) {
+      if (tax > 0) igst = tax;
+    } else if (typeof item.cgst_rate === "number" && typeof item.sgst_rate === "number") {
+      // explicit CGST% / SGST% entered by the user - honoured as typed
+      cgst = Math.round((lineTaxable * item.cgst_rate) / 100);
+      sgst = Math.round((lineTaxable * item.sgst_rate) / 100);
+    } else if (tax > 0) {
+      const halves = splitEqual(tax);
+      cgst = toPaisa(halves.cgst);
+      sgst = toPaisa(halves.sgst);
     }
+
+    const cgstRate = typeof item.cgst_rate === "number" ? item.cgst_rate : gstRate / 2;
+    const sgstRate = typeof item.sgst_rate === "number" ? item.sgst_rate : gstRate / 2;
 
     subtotalPaisa += basePaisa[i];
     itemDiscountPaisa += lineDiscountPaisa[i] + allocated[i];
@@ -257,6 +288,8 @@ export function calculateInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
       rate: round2(item.rate),
       quantity: item.quantity,
       gst_rate: gstRate,
+      cgst_rate: round2(cgstRate),
+      sgst_rate: round2(sgstRate),
       cess_rate: cessRate,
       base_amount: toRupees(basePaisa[i]),
       discount: toRupees(lineDiscountPaisa[i] + allocated[i]),
@@ -294,6 +327,43 @@ export function calculateInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
     sgst: toRupees(sgstPaisa),
     igst: toRupees(igstPaisa),
     cess: toRupees(cessPaisa),
+    tax_total: toRupees(taxPaisa),
+    gross_total: toRupees(grossPaisa),
+    round_off: toRupees(roundOffPaisa),
+    grand_total: toRupees(grandPaisa),
+    round_to_rupee: roundToRupee,
+  };
+}
+
+/**
+ * Applies a manual CGST / SGST rupee override on top of a computed result.
+ * The invoice form preview and the Worker both call this so the preview and the
+ * persisted totals can never disagree. Null/undefined means "keep computed".
+ */
+export function applyTaxOverride(
+  calc: InvoiceCalcResult,
+  cgstOverride?: number | null,
+  sgstOverride?: number | null,
+): InvoiceCalcResult {
+  if (cgstOverride == null && sgstOverride == null) return calc;
+  const cgst = Math.max(0, cgstOverride ?? calc.cgst);
+  const sgst = Math.max(0, sgstOverride ?? calc.sgst);
+  if (round2(cgst) === round2(calc.cgst) && round2(sgst) === round2(calc.sgst)) return calc;
+
+  const taxablePaisa = toPaisa(calc.taxable_amount);
+  const taxPaisa = toPaisa(cgst) + toPaisa(sgst) + toPaisa(calc.igst);
+  const grossPaisa = taxablePaisa + taxPaisa + toPaisa(calc.cess);
+  let grandPaisa = grossPaisa;
+  let roundOffPaisa = 0;
+  if (calc.round_to_rupee) {
+    grandPaisa = Math.round(grossPaisa / 100) * 100;
+    roundOffPaisa = grandPaisa - grossPaisa;
+  }
+
+  return {
+    ...calc,
+    cgst: toRupees(toPaisa(cgst)),
+    sgst: toRupees(toPaisa(sgst)),
     tax_total: toRupees(taxPaisa),
     gross_total: toRupees(grossPaisa),
     round_off: toRupees(roundOffPaisa),

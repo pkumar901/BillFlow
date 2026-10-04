@@ -1,7 +1,13 @@
 import { Router } from "../router";
 import { ok } from "../http";
 import { conflict, notFound, unprocessable } from "../errors";
-import { CalculationError, calculateInvoice, derivePaymentStatus, type InvoiceCalcResult } from "~shared/gst";
+import {
+  CalculationError,
+  applyTaxOverride,
+  calculateInvoice,
+  derivePaymentStatus,
+  type InvoiceCalcResult,
+} from "~shared/gst";
 import type { PaymentStatus } from "~shared/gst";
 import {
   getBusiness,
@@ -253,8 +259,8 @@ function invoiceStatements(
     `INSERT INTO invoices (id, business_id, customer_id, invoice_number, invoice_date, due_date,
       place_of_supply, reference_number, po_date, payment_terms, shipping_address, subtotal, discount,
       discount_type, discount_value, taxable_amount, cgst, sgst, igst, cess, round_off, grand_total,
-      amount_paid, balance_due, payment_status, interstate, notes, terms, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      tax_override, amount_paid, balance_due, payment_status, interstate, notes, terms, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     values["id"],
     values["business_id"],
@@ -278,6 +284,7 @@ function invoiceStatements(
     values["cess"],
     values["round_off"],
     values["grand_total"],
+    values["tax_override"],
     values["amount_paid"],
     values["balance_due"],
     values["payment_status"],
@@ -299,9 +306,9 @@ function itemStatements(
     const source = input.items[index];
     return env.DB.prepare(
       `INSERT INTO invoice_items (id, invoice_id, product_id, item_name, description, hsn_sac, rate,
-        quantity, unit, discount, discount_type, discount_value, taxable_value, gst_rate, cgst, sgst,
-        igst, cess, total_amount, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        quantity, unit, discount, discount_type, discount_value, taxable_value, gst_rate, cgst_rate,
+        sgst_rate, cgst, sgst, igst, cess, total_amount, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       newId(),
       invoiceId,
@@ -317,6 +324,8 @@ function itemStatements(
       source?.discount_value ?? 0,
       line.taxable_value,
       line.gst_rate,
+      line.cgst_rate,
+      line.sgst_rate,
       line.cgst,
       line.sgst,
       line.igst,
@@ -330,9 +339,12 @@ function itemStatements(
 function invoiceValues(
   business: Business,
   input: CreateInvoicePayload,
-  calc: InvoiceCalcResult,
+  rawCalc: InvoiceCalcResult,
   base: Record<string, unknown>,
 ): Record<string, unknown> {
+  // Honour a manual CGST/SGST rupee override from the Totals panel: the same
+  // helper the invoice form preview uses, so both always agree.
+  const calc = applyTaxOverride(rawCalc, input.cgst_override, input.sgst_override);
   return {
     ...base,
     subtotal: calc.subtotal,
@@ -346,6 +358,7 @@ function invoiceValues(
     cess: calc.cess,
     round_off: calc.round_off,
     grand_total: calc.grand_total,
+    tax_override: input.cgst_override != null || input.sgst_override != null ? 1 : 0,
     interstate: calc.interstate ? 1 : 0,
     business_id: business.id,
     customer_id: input.customer_id,
@@ -475,11 +488,14 @@ export function registerInvoiceRoutes(router: Router): void {
     const invoiceNumber = await resolveInvoiceNumber(env, business.id, settings, input.invoice_number);
     const now = nowIso();
 
-    const values = invoiceValues(business, input, calc, {
+    // manual CGST/SGST override (if any) must drive balance due / status too
+    const effective = applyTaxOverride(calc, input.cgst_override, input.sgst_override);
+
+    const values = invoiceValues(business, input, effective, {
       id: invoiceId,
       invoice_number: invoiceNumber,
       amount_paid: 0,
-      balance_due: calc.grand_total,
+      balance_due: effective.grand_total,
       payment_status: "unpaid",
       created_at: now,
       updated_at: now,
@@ -567,11 +583,12 @@ export function registerInvoiceRoutes(router: Router): void {
     }
 
     const now = nowIso();
+    const effective = applyTaxOverride(calc, input.cgst_override, input.sgst_override);
     const amountPaid = Number(existing.amount_paid ?? 0);
-    const balanceDue = Math.max(Number((calc.grand_total as number)) - amountPaid, 0);
-    const status = derivePaymentStatus(calc.grand_total, amountPaid);
+    const balanceDue = Math.max(Number(effective.grand_total) - amountPaid, 0);
+    const status = derivePaymentStatus(effective.grand_total, amountPaid);
 
-    const values = invoiceValues(business, input, calc, {
+    const values = invoiceValues(business, input, effective, {
       id: existing.id,
       invoice_number: invoiceNumber,
       amount_paid: amountPaid,
@@ -586,8 +603,9 @@ export function registerInvoiceRoutes(router: Router): void {
         `UPDATE invoices SET customer_id = ?, invoice_number = ?, invoice_date = ?, due_date = ?,
           place_of_supply = ?, reference_number = ?, po_date = ?, payment_terms = ?, shipping_address = ?,
           subtotal = ?, discount = ?, discount_type = ?, discount_value = ?, taxable_amount = ?,
-          cgst = ?, sgst = ?, igst = ?, cess = ?, round_off = ?, grand_total = ?, amount_paid = ?,
-          balance_due = ?, payment_status = ?, interstate = ?, notes = ?, terms = ?, updated_at = ?
+          cgst = ?, sgst = ?, igst = ?, cess = ?, round_off = ?, grand_total = ?, tax_override = ?,
+          amount_paid = ?, balance_due = ?, payment_status = ?, interstate = ?, notes = ?, terms = ?,
+          updated_at = ?
          WHERE id = ? AND business_id = ?`,
       ).bind(
         values["customer_id"],
@@ -610,6 +628,7 @@ export function registerInvoiceRoutes(router: Router): void {
         values["cess"],
         values["round_off"],
         values["grand_total"],
+        values["tax_override"],
         values["amount_paid"],
         values["balance_due"],
         values["payment_status"],

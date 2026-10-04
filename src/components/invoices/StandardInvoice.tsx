@@ -1,6 +1,6 @@
 import { amountInWords, formatDate, formatINR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { addressLines, groupTaxes, shippingAddressLines, stateCodeOf, type CopyLabel } from "./invoiceShared";
+import { addressLines, groupTaxes, shippingAddressLines, type CopyLabel } from "./invoiceShared";
 import type { InvoiceDetail } from "~shared/types";
 
 /**
@@ -57,8 +57,6 @@ export function StandardInvoice({
 
   const shippingAddress = shippingAddressLines(invoice, customer);
   const showShipping = shippingAddress.length > 0;
-
-  const stateCode = stateCodeOf(invoice, customer, business);
 
   const taxGroups = groupTaxes(items, interstate);
   const totalQuantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -150,14 +148,12 @@ export function StandardInvoice({
               <div className="border-r-[1.92px] border-neutral-900">
                 {metaCell("Place of Supply:", placeOfSupply)}
               </div>
-              {metaCell("State Code:", stateCode)}
-            </div>
-
-            <div className="grid grid-cols-2 border-b-[1.92px] border-neutral-900">
-              <div className="border-r-[1.92px] border-neutral-900">
-                {metaCell("PO No:", invoice.reference_number || "—")}
+              <div className="grid grid-cols-2">
+                <div className="border-r-[1.92px] border-neutral-900">
+                  {metaCell("PO No:", invoice.reference_number || "")}
+                </div>
+                {metaCell("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "")}
               </div>
-              {metaCell("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "—")}
             </div>
 
             <div className="px-1.5 py-2 text-[10.8px] leading-[13.5px]">

@@ -237,16 +237,19 @@ Request/response conventions:
   600 000 chars and rejected if it is not an `http(s)`/`data:image` URL).
 - **Customers & products** — CRUD with search, GST rates, HSN/SAC codes,
   pricing defaults, usage guards before delete.
-- **Invoices** — line items with per-line discount + GST rate, intra-state
-  CGST/SGST vs inter-state IGST by place of supply, invoice-level discount,
-  round-off option, Indian amount-in-words, `PREFIX-0001` numbering with a
-  monotonic counter, status: Draft / Unpaid / Partial / Paid / Overdue /
-  Cancelled, an **optional shipping address** (fill-up field, saved per invoice)
-  and a **State Code** shown on every invoice layout, plus **PO** (the customer's
-  purchase-order number) and **PO Date** in the header meta block — the old
-  editable "Due date" field is gone from the form, reports and layouts (an
-  internal due date is still derived from *Default due days* so Overdue status
-  keeps working).
+- **Invoices** — line items with an editable per-line **CGST% / SGST%** split
+  (the totals are always computed from those rates) plus per-line discount,
+  intra-state CGST/SGST vs inter-state IGST by place of supply, invoice-level
+  discount, round-off option, Indian amount-in-words, `PREFIX-0001` numbering
+  with a monotonic counter, status: Draft / Unpaid / Partial / Paid / Overdue /
+  Cancelled, an **optional shipping address** (fill-up field, saved per invoice),
+  editable **CGST / SGST amounts** in the Totals panel (a manual override is
+  stored on the invoice and the grand total, amount-in-words and round-off
+  follow it), and **PO No** (the customer's purchase-order number) plus **PO
+  Date** shown side-by-side in the header meta block — the old "State Code"
+  cell and the editable "Due date" field are both gone from the form, reports
+  and layouts (an internal due date is still derived from *Default due days* so
+  Overdue status keeps working).
 - **Preview & output** — "TAX INVOICE" preview, 5 templates (Standard, Classic,
   Modern, Minimal, Professional) with accent colour, PDF download (jsPDF,
   embedded fonts), print, CSV export, share via WhatsApp / e-mail / copy link.

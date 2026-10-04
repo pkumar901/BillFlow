@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { INTER_BOLD_BASE64, INTER_REGULAR_BASE64 } from "./fontData";
 import { amountInWords, formatDate, formatINR } from "@/lib/format";
 import type { CopyLabel } from "@/components/invoices/invoiceShared";
-import { shippingAddressLines, stateCodeOf } from "@/components/invoices/invoiceShared";
+import { shippingAddressLines } from "@/components/invoices/invoiceShared";
 import type { InvoiceDetail } from "~shared/types";
 
 /**
@@ -250,17 +250,14 @@ export function buildStandardInvoicePdf(
   const rowB = rowA + 11.5;
   const placeOfSupply = invoice.place_of_supply || customer.place_of_supply || customer.state || "—";
   metaLabel("Place of Supply:", placeOfSupply, MID + 1.6, rowB);
-  metaLabel("State Code:", stateCodeOf(invoice, customer, business), SUB + 1.5, rowB);
+  const poMid = SUB + (FR - SUB) / 2;
+  metaLabel("PO No:", invoice.reference_number || "", SUB + 1.5, rowB);
+  metaLabel("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "", poMid + 1.5, rowB);
   rule(MID, rowB + 11.6, FR, 0.5);
   vrule(SUB, rowA, rowB, 0.5);
+  vrule(poMid, rowB, rowB + 11.6, 0.5);
 
-  const rowC = rowB + 11.6;
-  metaLabel("PO No:", invoice.reference_number || "—", MID + 1.6, rowC);
-  metaLabel("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "—", SUB + 1.5, rowC);
-  rule(MID, rowC + 11.6, FR, 0.5);
-  vrule(SUB, rowB, rowC, 0.5);
-
-  let ry = rowC + 11.6;
+  let ry = rowB + 11.6;
   const shippingParts = shippingAddressLines(invoice, customer);
 
   if (shippingParts.length > 0) {

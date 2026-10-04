@@ -6,7 +6,6 @@ import {
   addressLines,
   groupTaxes,
   shippingAddressLines,
-  stateCodeOf,
   COPY_LABELS,
   type CopyLabel,
 } from "./invoiceShared";
@@ -53,8 +52,6 @@ export function InvoiceDocument({
 
   const shippingAddress = shippingAddressLines(invoice, customer);
   const showShipping = shippingAddress.length > 0;
-
-  const stateCode = stateCodeOf(invoice, customer, business);
 
   const taxGroups = groupTaxes(items, interstate);
   const totalQuantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -159,13 +156,15 @@ export function InvoiceDocument({
       <section className="mb-3 grid grid-cols-3 gap-x-4 gap-y-1.5 rounded border border-dashed px-3 py-2 text-[11px] sm:grid-cols-4">
         <Meta label="Invoice #" value={invoice.invoice_number} />
         <Meta label="Invoice Date" value={formatDate(invoice.invoice_date)} />
-        <Meta label="State Code" value={stateCode} />
+        <Meta label="PO No" value={invoice.reference_number || ""} />
+        <Meta
+          label="PO Date"
+          value={invoice.po_date ? formatDate(invoice.po_date) : ""}
+        />
         <Meta
           label="Place of Supply"
           value={invoice.place_of_supply || customer.place_of_supply || customer.state || "—"}
         />
-        <Meta label="PO No" value={invoice.reference_number || "—"} />
-        <Meta label="PO Date" value={invoice.po_date ? formatDate(invoice.po_date) : "—"} />
         <Meta label="Payment Terms" value={invoice.payment_terms || "—"} />
         <Meta label="Customer GSTIN" value={customer.gstin || "—"} />
         <Meta label="Supply Type" value={interstate ? "Inter-state (IGST)" : "Intra-state (CGST/SGST)"} />

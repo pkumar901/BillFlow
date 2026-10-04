@@ -134,6 +134,8 @@ export interface Invoice {
   cess: number;
   round_off: number;
   grand_total: number;
+  /** 1 when CGST/SGST were typed manually in the Totals panel */
+  tax_override: number;
   amount_paid: number;
   balance_due: number;
   payment_status: PaymentStatus;
@@ -169,6 +171,9 @@ export interface InvoiceItem {
   discount_value: number;
   taxable_value: number;
   gst_rate: number;
+  /** intra-state split used for this line (null when never edited) */
+  cgst_rate: number | null;
+  sgst_rate: number | null;
   cgst: number;
   sgst: number;
   igst: number;
@@ -233,6 +238,9 @@ export interface CreateInvoicePayload {
   discount_type?: DiscountType;
   discount_value?: number;
   items: CreateInvoiceItemPayload[];
+  /** Manual override of the computed intra-state tax (Totals-panel editing). */
+  cgst_override?: number | null;
+  sgst_override?: number | null;
 }
 
 export interface CreateInvoiceItemPayload {
@@ -244,6 +252,8 @@ export interface CreateInvoiceItemPayload {
   quantity: number;
   unit?: string;
   gst_rate: number;
+  cgst_rate?: number;
+  sgst_rate?: number;
   cess_rate?: number;
   discount_type?: DiscountType;
   discount_value?: number;

@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { COPY_LABELS, InvoiceDocument, type CopyLabel } from "@/components/invoices/InvoiceDocument";
-import { shippingAddressLines, stateCodeOf } from "@/components/invoices/invoiceShared";
+import { shippingAddressLines } from "@/components/invoices/invoiceShared";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -352,7 +352,6 @@ export function InvoiceViewPage() {
               <Row label="Status" value={<StatusBadge status={invoice.display_status ?? invoice.payment_status} />} />
               <Row label="Supply type" value={invoice.interstate ? "Inter-state (IGST)" : "Intra-state (CGST/SGST)"} />
               <Row label="Place of supply" value={invoice.place_of_supply || customer.state || "—"} />
-              <Row label="State code" value={stateCodeOf(invoice, customer, detail.business)} />
               {shippingAddressLines(invoice, customer).length > 0 && (
                 <Row
                   label="Shipping address"

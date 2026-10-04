@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { INTER_BOLD_BASE64, INTER_REGULAR_BASE64 } from "./fontData";
 import { amountInWords, formatDate, formatINR } from "@/lib/format";
 import type { CopyLabel } from "@/components/invoices/InvoiceDocument";
-import { shippingAddressLines, stateCodeOf } from "@/components/invoices/invoiceShared";
+import { shippingAddressLines } from "@/components/invoices/invoiceShared";
 import type { InvoiceDetail } from "~shared/types";
 import { buildStandardInvoicePdf } from "./standardInvoicePdf";
 
@@ -197,10 +197,9 @@ export function buildInvoicePdf(detail: InvoiceDetail, options: PdfOptions = {})
   const meta: Array<[string, string]> = [
     ["Invoice #", invoice.invoice_number],
     ["Invoice Date", formatDate(invoice.invoice_date)],
-    ["State Code", stateCodeOf(invoice, customer, business)],
+    ["PO No", invoice.reference_number || ""],
+    ["PO Date", invoice.po_date ? formatDate(invoice.po_date) : ""],
     ["Place of Supply", invoice.place_of_supply || customer.place_of_supply || customer.state || "—"],
-    ["PO No", invoice.reference_number || "—"],
-    ["PO Date", invoice.po_date ? formatDate(invoice.po_date) : "—"],
     ["Payment Terms", invoice.payment_terms || "—"],
     ["Supply Type", interstate ? "Inter-state (IGST)" : "Intra-state (CGST/SGST)"],
   ];

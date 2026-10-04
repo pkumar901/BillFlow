@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ import { ErrorState, LoadingState, Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { api, ApiError } from "@/lib/api";
 import { addDaysISO, amountInWords, formatINR, round2, todayISO } from "@/lib/format";
-import { CalculationError, calculateInvoice, type DiscountType, type InvoiceCalcResult } from "~shared/gst";
+import { CalculationError, applyTaxOverride, calculateInvoice, type DiscountType, type InvoiceCalcResult } from "~shared/gst";
 import { STATES, stateLabel } from "~shared/states";
 import type {
   Business,
@@ -44,7 +44,9 @@ interface ItemRow {
   rate: string;
   quantity: string;
   unit: string;
-  gst_rate: string;
+  /** intra-state split - both halves are editable, they sum to the GST rate */
+  cgst_rate: string;
+  sgst_rate: string;
   cess_rate: string;
   discount_type: DiscountType;
   discount_value: string;
@@ -64,6 +66,9 @@ interface FormState {
   terms: string;
   discount_type: DiscountType;
   discount_value: string;
+  /** Manual CGST/SGST rupee overrides (empty string = use the computed tax). */
+  cgst_override: string;
+  sgst_override: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -80,6 +85,8 @@ const EMPTY_FORM: FormState = {
   terms: "",
   discount_type: "amount",
   discount_value: "",
+  cgst_override: "",
+  sgst_override: "",
 };
 
 let rowCounter = 0;
@@ -98,7 +105,8 @@ function emptyRow(): ItemRow {
     rate: "",
     quantity: "1",
     unit: "PCS",
-    gst_rate: "18",
+    cgst_rate: "9",
+    sgst_rate: "9",
     cess_rate: "0",
     discount_type: "percent",
     discount_value: "",
@@ -108,6 +116,11 @@ function emptyRow(): ItemRow {
 function num(value: string): number {
   const parsed = Number.parseFloat(String(value).replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Blank field = no manual override (the computed tax is used). */
+function optionalNum(value: string): number | null {
+  return value.trim() === "" ? null : num(value);
 }
 
 /** Recovers the pure line discount (before invoice-level allocation) for editing. */
@@ -126,6 +139,10 @@ function recoverLineDiscount(item: InvoiceItem, invoice: InvoiceDetail["invoice"
 function rowFromItem(item: InvoiceItem, invoice: InvoiceDetail["invoice"]): ItemRow {
   const taxable = Number(item.taxable_value || 0);
   const cessRate = taxable > 0 ? round2((Number(item.cess || 0) / taxable) * 100) : 0;
+  // Older rows only stored the total rate, so fall back to an equal split.
+  const gstTotal = Number(item.gst_rate ?? 18);
+  const cgstRate = item.cgst_rate != null ? Number(item.cgst_rate) : round2(gstTotal / 2);
+  const sgstRate = item.sgst_rate != null ? Number(item.sgst_rate) : round2(gstTotal - cgstRate);
   return {
     key: nextKey(),
     product_id: item.product_id,
@@ -135,7 +152,8 @@ function rowFromItem(item: InvoiceItem, invoice: InvoiceDetail["invoice"]): Item
     rate: String(item.rate ?? ""),
     quantity: String(item.quantity ?? 1),
     unit: item.unit || "PCS",
-    gst_rate: String(item.gst_rate ?? 18),
+    cgst_rate: String(cgstRate),
+    sgst_rate: String(sgstRate),
     cess_rate: String(cessRate || 0),
     discount_type: "amount",
     discount_value: String(recoverLineDiscount(item, invoice) || ""),
@@ -206,6 +224,8 @@ export function InvoiceFormPage() {
             terms: detail.invoice.terms ?? "",
             discount_type: (detail.invoice.discount_type as DiscountType) ?? "amount",
             discount_value: detail.invoice.discount_value ? String(detail.invoice.discount_value) : "",
+            cgst_override: "",
+            sgst_override: "",
           });
           setRows(detail.items.map((item) => rowFromItem(item, detail.invoice)));
         } else {
@@ -247,14 +267,20 @@ export function InvoiceFormPage() {
 
   /* ----------------------------- calculation ---------------------------- */
 
-  const calc = useMemo<{ result: InvoiceCalcResult | null; error: string | null }>(() => {
-    if (!business) return { result: null, error: null };
+  const calc = useMemo<{
+    /** Raw calculator output, before any manual CGST/SGST override. */
+    computed: InvoiceCalcResult | null;
+    /** What the invoice will actually store/display after the override. */
+    result: InvoiceCalcResult | null;
+    error: string | null;
+  }>(() => {
+    if (!business) return { computed: null, result: null, error: null };
     const active = rows.filter((row) => row.item_name.trim());
-    if (active.length === 0) return { result: null, error: null };
+    if (active.length === 0) return { computed: null, result: null, error: null };
 
     const placeOfSupply = form.place_of_supply || customer?.place_of_supply || customer?.state || "";
     try {
-      const result = calculateInvoice({
+      const computed = calculateInvoice({
         seller_state: business.state ?? "",
         customer_state: customer?.state ?? placeOfSupply,
         place_of_supply: placeOfSupply,
@@ -268,21 +294,43 @@ export function InvoiceFormPage() {
           rate: num(row.rate),
           quantity: num(row.quantity),
           unit: row.unit || "PCS",
-          gst_rate: num(row.gst_rate),
+          gst_rate: num(row.cgst_rate) + num(row.sgst_rate),
+          cgst_rate: num(row.cgst_rate),
+          sgst_rate: num(row.sgst_rate),
           cess_rate: num(row.cess_rate),
           discount_type: num(row.discount_value) > 0 ? row.discount_type : undefined,
           discount_value: num(row.discount_value) > 0 ? num(row.discount_value) : undefined,
         })),
       });
-      return { result, error: null };
+      const result = applyTaxOverride(
+        computed,
+        optionalNum(form.cgst_override),
+        optionalNum(form.sgst_override),
+      );
+      return { computed, result, error: null };
     } catch (err) {
       const message =
         err instanceof CalculationError
           ? err.message
           : "Check the item rates and quantities to see totals.";
-      return { result: null, error: message };
+      return { computed: null, result: null, error: message };
     }
   }, [business, settings, rows, form, customer]);
+
+  /**
+   * Reopens with the stored manual CGST/SGST override intact, so editing an
+   * invoice that was saved with one does not silently drop it on save.
+   */
+  const overrideSeeded = useRef(false);
+  useEffect(() => {
+    if (overrideSeeded.current || !original?.invoice.tax_override) return;
+    overrideSeeded.current = true;
+    setForm((prev) => ({
+      ...prev,
+      cgst_override: String(original.invoice.cgst ?? ""),
+      sgst_override: String(original.invoice.sgst ?? ""),
+    }));
+  }, [original]);
 
   const previewDetail = useMemo<InvoiceDetail | null>(() => {
     if (!calc.result || !business || !settings || !customer) return null;
@@ -310,6 +358,7 @@ export function InvoiceFormPage() {
       cess: result.cess,
       round_off: result.round_off,
       grand_total: result.grand_total,
+      tax_override: original?.invoice.tax_override ?? 0,
       amount_paid: original?.invoice.amount_paid ?? 0,
       balance_due: original?.invoice.balance_due ?? result.grand_total,
       payment_status: original?.invoice.payment_status ?? "unpaid",
@@ -338,6 +387,8 @@ export function InvoiceFormPage() {
         discount_value: source ? num(source.discount_value) : 0,
         taxable_value: line.taxable_value,
         gst_rate: line.gst_rate,
+        cgst_rate: line.cgst_rate,
+        sgst_rate: line.sgst_rate,
         cgst: line.cgst,
         sgst: line.sgst,
         igst: line.igst,
@@ -399,6 +450,8 @@ export function InvoiceFormPage() {
     terms: form.terms || null,
     discount_type: form.discount_value ? form.discount_type : undefined,
     discount_value: form.discount_value ? num(form.discount_value) : undefined,
+    cgst_override: form.cgst_override.trim() === "" ? null : num(form.cgst_override),
+    sgst_override: form.sgst_override.trim() === "" ? null : num(form.sgst_override),
     items: rows
       .filter((row) => row.item_name.trim())
       .map((row) => ({
@@ -409,7 +462,9 @@ export function InvoiceFormPage() {
         rate: num(row.rate),
         quantity: num(row.quantity),
         unit: row.unit || "PCS",
-        gst_rate: num(row.gst_rate),
+        gst_rate: num(row.cgst_rate) + num(row.sgst_rate),
+        cgst_rate: num(row.cgst_rate),
+        sgst_rate: num(row.sgst_rate),
         cess_rate: num(row.cess_rate) || undefined,
         discount_type: num(row.discount_value) > 0 ? row.discount_type : undefined,
         discount_value: num(row.discount_value) > 0 ? num(row.discount_value) : undefined,
@@ -425,8 +480,20 @@ export function InvoiceFormPage() {
     active.forEach((row) => {
       if (!(num(row.quantity) > 0)) found.items = "Every item needs a quantity greater than zero.";
       if (num(row.rate) < 0) found.items = "Rate cannot be negative.";
-      if (num(row.gst_rate) < 0 || num(row.gst_rate) > 100) found.items = "GST rate must be 0-100%.";
+      const cgst = num(row.cgst_rate);
+      const sgst = num(row.sgst_rate);
+      if (cgst < 0 || cgst > 100 || sgst < 0 || sgst > 100) {
+        found.items = "CGST and SGST rates must be 0-100%.";
+      } else if (cgst + sgst > 100) {
+        found.items = "CGST + SGST cannot exceed 100%.";
+      }
     });
+    if (form.cgst_override.trim() !== "" && num(form.cgst_override) < 0) {
+      found.cgst_override = "CGST amount cannot be negative.";
+    }
+    if (form.sgst_override.trim() !== "" && num(form.sgst_override) < 0) {
+      found.sgst_override = "SGST amount cannot be negative.";
+    }
     return found;
   };
 
@@ -548,7 +615,7 @@ export function InvoiceFormPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="PO number" htmlFor="inv-ref">
+              <Field label="PO No" htmlFor="inv-ref">
                 <Input
                   id="inv-ref"
                   value={form.reference_number}
@@ -666,7 +733,7 @@ export function InvoiceFormPage() {
                     <th className="w-28 py-2 text-right">Rate ₹</th>
                     <th className="w-24 py-2">Disc type</th>
                     <th className="w-24 py-2 text-right">Disc</th>
-                    <th className="w-20 py-2 text-right">GST %</th>
+                    <th className="w-32 py-2 text-right">CGST / SGST %</th>
                     <th className="w-20 py-2 text-right">Cess %</th>
                     <th className="w-32 py-2 text-right">Taxable</th>
                     <th className="w-32 py-2 text-right">Amount</th>
@@ -755,13 +822,24 @@ export function InvoiceFormPage() {
                           />
                         </td>
                         <td className="py-2 pr-2">
-                          <input
-                            className="h-8 w-full rounded border border-input bg-white px-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                            inputMode="decimal"
-                            value={row.gst_rate}
-                            aria-label={`Item ${index + 1} GST rate`}
-                            onChange={(event) => updateRow(row.key, { gst_rate: event.target.value })}
-                          />
+                          <div className="flex gap-1">
+                            <input
+                              className="h-8 w-full min-w-0 rounded border border-input bg-white px-1 text-right text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                              inputMode="decimal"
+                              value={row.cgst_rate}
+                              placeholder="CGST"
+                              aria-label={`Item ${index + 1} CGST rate`}
+                              onChange={(event) => updateRow(row.key, { cgst_rate: event.target.value })}
+                            />
+                            <input
+                              className="h-8 w-full min-w-0 rounded border border-input bg-white px-1 text-right text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                              inputMode="decimal"
+                              value={row.sgst_rate}
+                              placeholder="SGST"
+                              aria-label={`Item ${index + 1} SGST rate`}
+                              onChange={(event) => updateRow(row.key, { sgst_rate: event.target.value })}
+                            />
+                          </div>
                         </td>
                         <td className="py-2 pr-2">
                           <input
@@ -911,8 +989,20 @@ export function InvoiceFormPage() {
                   <TotalRow label="IGST" value={formatINR(result.igst)} />
                 ) : (
                   <>
-                    <TotalRow label="CGST" value={formatINR(result.cgst)} />
-                    <TotalRow label="SGST" value={formatINR(result.sgst)} />
+                    <TaxOverrideRow
+                      label="CGST"
+                      value={form.cgst_override}
+                      placeholder={formatINR(calc.computed?.cgst ?? 0)}
+                      error={errors.cgst_override}
+                      onChange={(next) => setForm((prev) => ({ ...prev, cgst_override: next }))}
+                    />
+                    <TaxOverrideRow
+                      label="SGST"
+                      value={form.sgst_override}
+                      placeholder={formatINR(calc.computed?.sgst ?? 0)}
+                      error={errors.sgst_override}
+                      onChange={(next) => setForm((prev) => ({ ...prev, sgst_override: next }))}
+                    />
                   </>
                 )}
                 {result.cess > 0 && <TotalRow label="Cess" value={formatINR(result.cess)} />}
@@ -928,6 +1018,13 @@ export function InvoiceFormPage() {
                     ? "Inter-state supply → IGST applies."
                     : "Intra-state supply → CGST + SGST apply."}
                 </p>
+                {!result.interstate &&
+                  (form.cgst_override.trim() !== "" || form.sgst_override.trim() !== "") && (
+                    <p className="pt-1 text-[11px] text-teal-700">
+                      Manual override — these totals use your amount; the line-wise split still shows the
+                      computed tax.
+                    </p>
+                  )}
               </div>
             )}
           </section>
@@ -970,6 +1067,54 @@ function TotalRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+/**
+ * Editable CGST / SGST amount in the Totals panel. Typing a value overrides the
+ * computed tax (the grand total, amount in words and round off follow it);
+ * clearing the field returns to the computed amount.
+ */
+function TaxOverrideRow({
+  label,
+  value,
+  placeholder,
+  error,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  error?: string;
+  onChange: (next: string) => void;
+}) {
+  const overridden = value.trim() !== "";
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="flex items-center gap-1.5">
+        <span className="text-muted-foreground">{label}</span>
+        <span
+          className={`text-[10px] uppercase tracking-wide ${
+            overridden ? "text-teal-700" : "text-muted-foreground/70"
+          }`}
+        >
+          {overridden ? "manual" : "auto"}
+        </span>
+      </span>
+      <span className="flex items-center gap-2">
+        {error && <span className="text-xs text-destructive">{error}</span>}
+        <input
+          className={`h-7 w-28 rounded border bg-white px-2 text-right text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring ${
+            overridden ? "border-teal-600" : "border-input"
+          }`}
+          inputMode="decimal"
+          value={value}
+          placeholder={placeholder}
+          aria-label={`${label} amount override`}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </span>
     </div>
   );
 }

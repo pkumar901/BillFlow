@@ -258,6 +258,8 @@ export const invoiceItemSchema = z.object({
     .number({ invalid_type_error: "GST rate must be a number." })
     .min(0, "GST rate must be 0 or more.")
     .max(100, "GST rate must be 100 or less."),
+  cgst_rate: z.number().min(0, "CGST rate must be 0 or more.").max(100).optional(),
+  sgst_rate: z.number().min(0, "SGST rate must be 0 or more.").max(100).optional(),
   cess_rate: z.number().min(0).max(100).optional(),
   discount_type: z.enum(["percent", "amount"]).optional(),
   discount_value: z.number().min(0, "Discount cannot be negative.").max(1_000_000_000).optional(),
@@ -283,6 +285,8 @@ export const invoiceSchema = z.object({
   terms: optionalTrimmed(5000),
   discount_type: z.enum(["percent", "amount"]).optional(),
   discount_value: z.number().min(0, "Discount cannot be negative.").max(1_000_000_000).optional(),
+  cgst_override: z.number().min(0, "CGST cannot be negative.").max(1_000_000_000).nullish(),
+  sgst_override: z.number().min(0, "SGST cannot be negative.").max(1_000_000_000).nullish(),
   items: z
     .array(invoiceItemSchema)
     .min(1, "Please add at least one item.")
