@@ -22,4 +22,5 @@ scripts/ref_rowcrop.png
 scripts/ref_detail.txt
 scripts/ref_rules_full.txt
 scripts/new_pdf/
+scripts/new_pdf2/
 scripts/inspect_pdf.py

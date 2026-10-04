@@ -155,7 +155,7 @@ export function StandardInvoice({
 
             <div className="grid grid-cols-2 border-b-[1.92px] border-neutral-900">
               <div className="border-r-[1.92px] border-neutral-900">
-                {metaCell("PO:", invoice.reference_number || "—")}
+                {metaCell("PO No:", invoice.reference_number || "—")}
               </div>
               {metaCell("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "—")}
             </div>

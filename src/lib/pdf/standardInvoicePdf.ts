@@ -255,7 +255,7 @@ export function buildStandardInvoicePdf(
   vrule(SUB, rowA, rowB, 0.5);
 
   const rowC = rowB + 11.6;
-  metaLabel("PO:", invoice.reference_number || "—", MID + 1.6, rowC);
+  metaLabel("PO No:", invoice.reference_number || "—", MID + 1.6, rowC);
   metaLabel("PO Date:", invoice.po_date ? formatDate(invoice.po_date) : "—", SUB + 1.5, rowC);
   rule(MID, rowC + 11.6, FR, 0.5);
   vrule(SUB, rowB, rowC, 0.5);

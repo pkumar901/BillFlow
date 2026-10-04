@@ -199,7 +199,7 @@ export function buildInvoicePdf(detail: InvoiceDetail, options: PdfOptions = {})
     ["Invoice Date", formatDate(invoice.invoice_date)],
     ["State Code", stateCodeOf(invoice, customer, business)],
     ["Place of Supply", invoice.place_of_supply || customer.place_of_supply || customer.state || "—"],
-    ["PO", invoice.reference_number || "—"],
+    ["PO No", invoice.reference_number || "—"],
     ["PO Date", invoice.po_date ? formatDate(invoice.po_date) : "—"],
     ["Payment Terms", invoice.payment_terms || "—"],
     ["Supply Type", interstate ? "Inter-state (IGST)" : "Intra-state (CGST/SGST)"],
