@@ -253,6 +253,12 @@ Request/response conventions:
 - **Preview & output** — "TAX INVOICE" preview, 5 templates (Standard, Classic,
   Modern, Minimal, Professional) with accent colour, PDF download (jsPDF,
   embedded fonts), print, CSV export, share via WhatsApp / e-mail / copy link.
+  Optional **signature** and **company seal** images (Settings → PDF &
+  Template) print above the "Authorized Signatory" line — seal on the left,
+  signature on the right — in the preview, the printout and both PDF
+  renderers. PDF delivery adapts to the device: a real download where the
+  browser supports it, otherwise the file opens in the native viewer
+  (iOS/iPadOS) so it can be shared, saved or printed.
   The **Standard** template is a ruled A4 tax-invoice grid: bordered frame,
   divider-only item table (no row rules), totals band, bank + authorisation
   block, footer cell with a "Powered by BillFlow" divider, and two closing lines
@@ -265,7 +271,8 @@ Request/response conventions:
   and PDF export; GST Summary is a business reporting tool and makes **no**
   compliance/filing claims.
 - **Settings** — business profile, invoice defaults, tax behaviour, bank details,
-  PDF/template, account (tabs are URL-synced via `?tab=`).
+  PDF/template (signature and company seal image uploads), account (tabs are
+  URL-synced via `?tab=`).
 - **Demo data** — seeded sample rows use masked GSTINs (`33XXXXXXXXXXXXXX`) and
   can be deleted like any other record.
 
