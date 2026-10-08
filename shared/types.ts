@@ -55,6 +55,8 @@ export interface InvoiceSettings {
   signature_text: string | null;
   /** Uploaded signature image (data URL) shown above the signatory line. */
   signature_image: string | null;
+  /** Uploaded company seal / stamp (data URL) shown beside the signature. */
+  seal_image: string | null;
   show_bank_details: boolean;
   bank_name: string | null;
   account_holder: string | null;

@@ -5,7 +5,7 @@ import { amountInWords, formatDate, formatINR } from "@/lib/format";
 import type { CopyLabel } from "@/components/invoices/invoiceShared";
 import { shippingAddressLines } from "@/components/invoices/invoiceShared";
 import type { InvoiceDetail } from "~shared/types";
-import { addSignatureImage } from "./signature";
+import { addImageToFit } from "./signature";
 /**
  * "Standard" invoice PDF - the print-ready twin of <StandardInvoice />.
  *
@@ -532,14 +532,13 @@ export function buildStandardInvoicePdf(
   if (signatory) {
     doc.text(signatory, PR, sigY - 4.2, { align: "right" });
   }
-  // uploaded signature, in the same spot as the on-screen preview
-  addSignatureImage(doc, settings.signature_image, {
-    x: PR - 44,
-    y: bankTop + 5.4,
-    w: 44,
-    h: Math.max((signatory ? sigY - 6.6 : sigY - 2.4) - (bankTop + 5.4), 6),
-    align: "right",
-  });
+  // uploaded signature + company seal, in the same spot as the on-screen
+  // preview (seal on the left, signature on the right)
+  const picTop = bankTop + 5.4;
+  const picBottom = signatory ? sigY - 6.6 : sigY - 2.4;
+  const picH = Math.max(picBottom - picTop, 6);
+  addImageToFit(doc, settings.signature_image, { x: PR - 46, y: picTop, w: 46, h: picH, align: "right" });
+  addImageToFit(doc, settings.seal_image, { x: PR - 112, y: picTop, w: 62, h: picH, align: "left" });
   doc.setTextColor(51, 51, 51);
   doc.text("Authorized Signatory", PR, sigY, { align: "right" });
 

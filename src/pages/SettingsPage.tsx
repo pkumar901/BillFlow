@@ -50,6 +50,64 @@ const TAB_ALIASES: Record<string, string> = { profile: "account", security: "acc
 
 type BusinessForm = Partial<Business>;
 
+/** Settings pictures stored as data URLs (printed on the invoice). */
+type SettingsImageKey = "signature_image" | "seal_image";
+
+/** Upload / replace / remove widget for a stored settings picture. */
+function SettingsImageField({
+  id,
+  label,
+  hint,
+  uploadLabel,
+  preview,
+  busy,
+  onFile,
+  onRemove,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  uploadLabel: string;
+  preview: string | null;
+  busy: boolean;
+  onFile: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="sm:col-span-2">
+      <Field label={label} htmlFor={id} hint={hint}>
+        <div className="flex flex-wrap items-center gap-3">
+          {preview && (
+            <img
+              src={preview}
+              alt={`${label} preview`}
+              className="h-16 w-auto max-w-[240px] rounded border bg-white object-contain p-1"
+            />
+          )}
+          <label
+            htmlFor={id}
+            className="inline-flex h-9 cursor-pointer items-center rounded-md border border-input bg-white px-3 text-sm font-medium shadow-sm hover:bg-accent"
+          >
+            {busy ? "Reading…" : preview ? "Replace" : uploadLabel}
+            <input
+              id={id}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              onChange={onFile}
+            />
+          </label>
+          {preview && (
+            <Button type="button" variant="outline" onClick={onRemove}>
+              Remove
+            </Button>
+          )}
+        </div>
+      </Field>
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const { user, setUser, setBusiness: setBusinessState } = useAuth();
   const [params, setParams] = useSearchParams();
@@ -136,22 +194,23 @@ export function SettingsPage() {
     }
   };
 
-  const [signatureBusy, setSignatureBusy] = useState(false);
+  /** Uploaded pictures (signature / company seal) staged for saving. */
+  const [busyImage, setBusyImage] = useState<SettingsImageKey | null>(null);
 
-  /** Shrinks the picked signature and stages it (saved with "Save PDF settings"). */
-  const onSignatureFile = async (event: ChangeEvent<HTMLInputElement>) => {
+  /** Shrinks the picked picture and stages it (saved with "Save PDF settings"). */
+  const onImageFile = (key: SettingsImageKey, label: string) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = ""; // allow re-picking the same file
     if (!file) return;
-    setSignatureBusy(true);
+    setBusyImage(key);
     try {
       const dataUrl = await resizeImageToDataUrl(file, 640);
-      setInvForm((prev) => ({ ...prev, signature_image: dataUrl }));
-      toast.success("Signature ready - press 'Save PDF settings' to apply it.");
+      setInvForm((prev) => ({ ...prev, [key]: dataUrl }));
+      toast.success(`${label} ready - press 'Save PDF settings' to apply it.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to read that image.");
     } finally {
-      setSignatureBusy(false);
+      setBusyImage(null);
     }
   };
 
@@ -219,12 +278,10 @@ export function SettingsPage() {
   const setInv = (key: keyof InvoiceSettings, value: string | number | boolean) =>
     setInvForm((prev) => ({ ...prev, [key]: value }));
 
-  // explicit undefined check: a removed signature (null) must not fall back to
+  // explicit undefined check: a removed picture (null) must not fall back to
   // the previously stored image.
-  const signaturePreview =
-    invForm.signature_image !== undefined
-      ? invForm.signature_image
-      : settings?.signature_image ?? null;
+  const imagePreview = (key: SettingsImageKey): string | null =>
+    invForm[key] !== undefined ? invForm[key] : settings?.[key] ?? null;
 
   return (
     <div className="space-y-6">
@@ -676,45 +733,27 @@ export function SettingsPage() {
                 />
               </Field>
 
-              <div className="sm:col-span-2">
-                <Field
-                  label="Signature image"
-                  htmlFor="pdf-sign-img"
-                  hint="Printed above the 'Authorized Signatory' line in the preview, the printout and the PDF"
-                >
-                  <div className="flex flex-wrap items-center gap-3">
-                    {signaturePreview && (
-                      <img
-                        src={signaturePreview}
-                        alt="Signature preview"
-                        className="h-16 w-auto max-w-[240px] rounded border bg-white object-contain p-1"
-                      />
-                    )}
-                    <label
-                      htmlFor="pdf-sign-img"
-                      className="inline-flex h-9 cursor-pointer items-center rounded-md border border-input bg-white px-3 text-sm font-medium shadow-sm hover:bg-accent"
-                    >
-                      {signatureBusy ? "Reading…" : signaturePreview ? "Replace" : "Upload signature"}
-                      <input
-                        id="pdf-sign-img"
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        className="sr-only"
-                        onChange={(event) => void onSignatureFile(event)}
-                      />
-                    </label>
-                    {signaturePreview && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setInvForm((prev) => ({ ...prev, signature_image: null }))}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                </Field>
-              </div>
+              <SettingsImageField
+                id="pdf-sign-img"
+                label="Signature image"
+                hint="Printed above the 'Authorized Signatory' line in the preview, the printout and the PDF"
+                uploadLabel="Upload signature"
+                preview={imagePreview("signature_image")}
+                busy={busyImage === "signature_image"}
+                onFile={(event) => void onImageFile("signature_image", "Signature")(event)}
+                onRemove={() => setInvForm((prev) => ({ ...prev, signature_image: null }))}
+              />
+
+              <SettingsImageField
+                id="pdf-seal-img"
+                label="Company seal image"
+                hint="Your round company stamp, printed beside the signature on the preview, printout and PDF"
+                uploadLabel="Upload company seal"
+                preview={imagePreview("seal_image")}
+                busy={busyImage === "seal_image"}
+                onFile={(event) => void onImageFile("seal_image", "Company seal")(event)}
+                onRemove={() => setInvForm((prev) => ({ ...prev, seal_image: null }))}
+              />
 
               <div className="sm:col-span-2 flex justify-end">
                 <Button loading={saving === "settings"} onClick={() => void saveSettings()}>

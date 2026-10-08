@@ -349,7 +349,14 @@ export function StandardInvoice({
 
           <div className="flex flex-col border-l-[1.92px] border-neutral-900 px-1.5 py-2 text-right text-[8.8px] leading-3">
             <div>For {business.business_name}</div>
-            <div className="flex grow items-center justify-end py-1">
+            <div className="flex grow items-center justify-end gap-2 py-1">
+              {settings.seal_image && (
+                <img
+                  src={settings.seal_image}
+                  alt="Company seal"
+                  className="max-h-[54px] w-auto max-w-[86px] object-contain"
+                />
+              )}
               {settings.signature_image && (
                 <img
                   src={settings.signature_image}

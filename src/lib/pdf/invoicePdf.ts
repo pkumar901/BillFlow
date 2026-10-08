@@ -6,7 +6,7 @@ import type { CopyLabel } from "@/components/invoices/InvoiceDocument";
 import { shippingAddressLines } from "@/components/invoices/invoiceShared";
 import type { InvoiceDetail } from "~shared/types";
 import { savePdf, type PdfDelivery } from "./savePdf";
-import { addSignatureImage } from "./signature";
+import { addImageToFit } from "./signature";
 import { buildStandardInvoicePdf } from "./standardInvoicePdf";
 
 const A4 = { width: 210, height: 297 };
@@ -426,13 +426,23 @@ export function buildInvoicePdf(detail: InvoiceDetail, options: PdfOptions = {})
   const sigY = y + 26;
   setFont("bold", 8);
   doc.text(`For ${business.business_name}`, A4.width - MARGIN, y + 4, { align: "right" });
-  // uploaded signature sits above the signatory rule (same place as the preview)
-  addSignatureImage(doc, settings.signature_image, {
-    x: A4.width - MARGIN - 60,
-    y: y + 7,
-    w: 60,
-    h: Math.max(sigY - (y + 7) - 2, 6),
+  // uploaded signature + company seal above the signatory rule (same place
+  // as the preview: seal on the left, signature on the right)
+  const picTop = y + 7;
+  const picH = Math.max(sigY - picTop - 2, 6);
+  addImageToFit(doc, settings.signature_image, {
+    x: A4.width - MARGIN - 58,
+    y: picTop,
+    w: 58,
+    h: picH,
     align: "right",
+  });
+  addImageToFit(doc, settings.seal_image, {
+    x: A4.width - MARGIN - 124,
+    y: picTop,
+    w: 62,
+    h: picH,
+    align: "left",
   });
   doc.setDrawColor(100, 116, 139);
   doc.line(A4.width - MARGIN - 60, sigY, A4.width - MARGIN, sigY);

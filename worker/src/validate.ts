@@ -73,6 +73,18 @@ const phoneField = z
   .refine((v) => isValidPhone(v ?? null), { message: "Enter a valid phone number." })
   .transform((v) => (v ? v : null));
 
+/** Uploaded picture (signature, company seal) stored as a resized data URL. */
+const imageField = (label: string) =>
+  z
+    .string()
+    .trim()
+    .max(700_000, `${label} image is too large.`)
+    .refine((v) => !v || /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(v), {
+      message: `${label} must be a PNG or JPEG image.`,
+    })
+    .nullish()
+    .transform((v) => (v ? v : null));
+
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters.")
@@ -170,15 +182,8 @@ export const invoiceSettingsSchema = z.object({
   default_notes: optionalTrimmed(2000),
   footer_text: optionalTrimmed(400),
   signature_text: optionalTrimmed(200),
-  signature_image: z
-    .string()
-    .trim()
-    .max(700_000, "Signature image is too large.")
-    .refine((v) => !v || /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(v), {
-      message: "Signature must be a PNG or JPEG image.",
-    })
-    .nullish()
-    .transform((v) => (v ? v : null)),
+  signature_image: imageField("Signature"),
+  seal_image: imageField("Company seal"),
   show_bank_details: z.boolean(),
   bank_name: optionalTrimmed(160),
   account_holder: optionalTrimmed(160),

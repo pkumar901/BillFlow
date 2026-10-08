@@ -333,7 +333,14 @@ export function InvoiceDocument({
         )}
         <div className="sm:text-right">
           <div className="font-semibold">For {business.business_name}</div>
-          <div className="flex min-h-[52px] items-end justify-end py-1">
+          <div className="flex min-h-[52px] items-end justify-end gap-3 py-1">
+            {settings.seal_image && (
+              <img
+                src={settings.seal_image}
+                alt="Company seal"
+                className="max-h-[54px] w-auto max-w-[96px] object-contain"
+              />
+            )}
             {settings.signature_image && (
               <img
                 src={settings.signature_image}

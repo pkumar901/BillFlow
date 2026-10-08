@@ -10,14 +10,15 @@ export interface SignatureBox {
 }
 
 /**
- * Draws the uploaded signature (a data URL, PNG or JPEG) inside `box`, scaled
- * to fit while preserving its aspect ratio. Returns false when there is no
- * usable image, so callers can simply ignore the result.
+ * Draws an uploaded picture (signature, company seal - a data URL, PNG or
+ * JPEG) inside `box`, scaled to fit while preserving its aspect ratio.
+ * Returns false when there is no usable image, so callers can simply ignore
+ * the result.
  *
  * Shared by both PDF layouts so the preview, the print output and the
- * downloaded PDF always show the same signature.
+ * downloaded PDF always show the same pictures.
  */
-export function addSignatureImage(
+export function addImageToFit(
   doc: jsPDF,
   dataUrl: string | null | undefined,
   box: SignatureBox,

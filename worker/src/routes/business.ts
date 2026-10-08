@@ -85,6 +85,7 @@ export function registerBusinessRoutes(router: Router): void {
       `UPDATE invoice_settings SET invoice_prefix = ?, next_invoice_number = ?, invoice_title = ?,
         default_copy_label = ?, default_due_days = ?, default_payment_terms = ?, default_terms = ?,
         default_notes = ?, footer_text = ?, signature_text = ?, signature_image = ?,
+        seal_image = ?,
         show_bank_details = ?, bank_name = ?,
         account_holder = ?, account_number = ?, ifsc_code = ?, branch = ?, authorized_signatory = ?,
         template = ?, accent_color = ?, round_to_rupee = ?, updated_at = ?
@@ -102,6 +103,7 @@ export function registerBusinessRoutes(router: Router): void {
         trimOrNull(input.footer_text),
         trimOrNull(input.signature_text),
         trimOrNull(input.signature_image),
+        trimOrNull(input.seal_image),
         input.show_bank_details ? 1 : 0,
         trimOrNull(input.bank_name),
         trimOrNull(input.account_holder),
