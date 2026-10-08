@@ -34,6 +34,7 @@ import {
 import { ErrorState, LoadingState } from "@/components/ui/spinner";
 import { api, ApiError } from "@/lib/api";
 import { downloadInvoicePdf } from "@/lib/pdf/invoicePdf";
+import { pdfDeliveryMessage } from "@/lib/pdf/savePdf";
 import { formatINR, formatDate } from "@/lib/format";
 import type { Invoice } from "~shared/types";
 
@@ -122,8 +123,9 @@ export function InvoicesPage() {
     setPdfBusy(invoice.id);
     try {
       const detail = await api.getInvoice(invoice.id);
-      downloadInvoicePdf(detail);
-      toast.success("PDF downloaded.");
+      const { ok, message } = pdfDeliveryMessage(downloadInvoicePdf(detail));
+      if (ok) toast.success(message);
+      else toast.error(message);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Unable to build the PDF.");
     } finally {

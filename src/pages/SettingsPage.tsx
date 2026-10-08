@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -136,6 +136,25 @@ export function SettingsPage() {
     }
   };
 
+  const [signatureBusy, setSignatureBusy] = useState(false);
+
+  /** Shrinks the picked signature and stages it (saved with "Save PDF settings"). */
+  const onSignatureFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    setSignatureBusy(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file, 640);
+      setInvForm((prev) => ({ ...prev, signature_image: dataUrl }));
+      toast.success("Signature ready - press 'Save PDF settings' to apply it.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to read that image.");
+    } finally {
+      setSignatureBusy(false);
+    }
+  };
+
   const saveProfile = async () => {
     setSaving("profile");
     try {
@@ -199,6 +218,13 @@ export function SettingsPage() {
 
   const setInv = (key: keyof InvoiceSettings, value: string | number | boolean) =>
     setInvForm((prev) => ({ ...prev, [key]: value }));
+
+  // explicit undefined check: a removed signature (null) must not fall back to
+  // the previously stored image.
+  const signaturePreview =
+    invForm.signature_image !== undefined
+      ? invForm.signature_image
+      : settings?.signature_image ?? null;
 
   return (
     <div className="space-y-6">
@@ -649,6 +675,46 @@ export function SettingsPage() {
                   onChange={(event) => setInv("signature_text", event.target.value)}
                 />
               </Field>
+
+              <div className="sm:col-span-2">
+                <Field
+                  label="Signature image"
+                  htmlFor="pdf-sign-img"
+                  hint="Printed above the 'Authorized Signatory' line in the preview, the printout and the PDF"
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    {signaturePreview && (
+                      <img
+                        src={signaturePreview}
+                        alt="Signature preview"
+                        className="h-16 w-auto max-w-[240px] rounded border bg-white object-contain p-1"
+                      />
+                    )}
+                    <label
+                      htmlFor="pdf-sign-img"
+                      className="inline-flex h-9 cursor-pointer items-center rounded-md border border-input bg-white px-3 text-sm font-medium shadow-sm hover:bg-accent"
+                    >
+                      {signatureBusy ? "Reading…" : signaturePreview ? "Replace" : "Upload signature"}
+                      <input
+                        id="pdf-sign-img"
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="sr-only"
+                        onChange={(event) => void onSignatureFile(event)}
+                      />
+                    </label>
+                    {signaturePreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setInvForm((prev) => ({ ...prev, signature_image: null }))}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </Field>
+              </div>
 
               <div className="sm:col-span-2 flex justify-end">
                 <Button loading={saving === "settings"} onClick={() => void saveSettings()}>

@@ -349,7 +349,15 @@ export function StandardInvoice({
 
           <div className="flex flex-col border-l-[1.92px] border-neutral-900 px-1.5 py-2 text-right text-[8.8px] leading-3">
             <div>For {business.business_name}</div>
-            <div className="grow" />
+            <div className="flex grow items-center justify-end py-1">
+              {settings.signature_image && (
+                <img
+                  src={settings.signature_image}
+                  alt="Signature"
+                  className="max-h-[46px] w-auto max-w-[150px] object-contain"
+                />
+              )}
+            </div>
             {signatory && <div>{signatory}</div>}
             <div className="text-neutral-700">Authorized Signatory</div>
           </div>

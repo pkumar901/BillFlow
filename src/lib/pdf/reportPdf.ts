@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { INTER_BOLD_BASE64, INTER_REGULAR_BASE64 } from "./fontData";
+import { savePdf, type PdfDelivery } from "./savePdf";
 
 export interface ReportPdfInput {
   title: string;
@@ -16,7 +17,7 @@ function money(value: number): string {
 }
 
 /** Renders a branded A4 report (tables with ₹ support) and triggers a download. */
-export function downloadReportPdf(input: ReportPdfInput): void {
+export function downloadReportPdf(input: ReportPdfInput): PdfDelivery {
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   doc.addFileToVFS("BillFlow-Regular.ttf", INTER_REGULAR_BASE64);
   doc.addFont("BillFlow-Regular.ttf", "BillFlow", "normal");
@@ -89,7 +90,7 @@ export function downloadReportPdf(input: ReportPdfInput): void {
   const filename = `${input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${new Date()
     .toISOString()
     .slice(0, 10)}.pdf`;
-  doc.save(filename);
+  return savePdf(doc, filename);
 }
 
 export { money as formatPdfMoney };

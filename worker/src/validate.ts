@@ -170,6 +170,15 @@ export const invoiceSettingsSchema = z.object({
   default_notes: optionalTrimmed(2000),
   footer_text: optionalTrimmed(400),
   signature_text: optionalTrimmed(200),
+  signature_image: z
+    .string()
+    .trim()
+    .max(700_000, "Signature image is too large.")
+    .refine((v) => !v || /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(v), {
+      message: "Signature must be a PNG or JPEG image.",
+    })
+    .nullish()
+    .transform((v) => (v ? v : null)),
   show_bank_details: z.boolean(),
   bank_name: optionalTrimmed(160),
   account_holder: optionalTrimmed(160),

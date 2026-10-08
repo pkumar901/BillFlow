@@ -332,7 +332,16 @@ export function InvoiceDocument({
           </div>
         )}
         <div className="sm:text-right">
-          <div className="mb-6 font-semibold">For {business.business_name}</div>
+          <div className="font-semibold">For {business.business_name}</div>
+          <div className="flex min-h-[52px] items-end justify-end py-1">
+            {settings.signature_image && (
+              <img
+                src={settings.signature_image}
+                alt="Signature"
+                className="max-h-[46px] w-auto max-w-[160px] object-contain"
+              />
+            )}
+          </div>
           <div className="border-t pt-1 inline-block min-w-[180px]">
             {settings.authorized_signatory || settings.signature_text || "Authorized Signatory"}
           </div>

@@ -44,6 +44,7 @@ import { api, ApiError } from "@/lib/api";
 import { copyText } from "@/lib/clipboard";
 import { amountInWords, formatDate, formatDateTime, formatINR, todayISO } from "@/lib/format";
 import { downloadInvoicePdf } from "@/lib/pdf/invoicePdf";
+import { pdfDeliveryMessage } from "@/lib/pdf/savePdf";
 import { printNode } from "@/lib/print";
 import { PAYMENT_METHODS, type InvoiceDetail } from "~shared/types";
 
@@ -88,8 +89,10 @@ export function InvoiceViewPage() {
     if (!detail) return;
     setPdfBusy(true);
     try {
-      downloadInvoicePdf(detail, { copyLabel });
-      toast.success("PDF downloaded.");
+      const delivery = downloadInvoicePdf(detail, { copyLabel });
+      const { ok, message } = pdfDeliveryMessage(delivery);
+      if (ok) toast.success(message);
+      else toast.error(message);
     } catch {
       toast.error("Unable to build the PDF.");
     } finally {

@@ -5,6 +5,8 @@ import { amountInWords, formatDate, formatINR } from "@/lib/format";
 import type { CopyLabel } from "@/components/invoices/InvoiceDocument";
 import { shippingAddressLines } from "@/components/invoices/invoiceShared";
 import type { InvoiceDetail } from "~shared/types";
+import { savePdf, type PdfDelivery } from "./savePdf";
+import { addSignatureImage } from "./signature";
 import { buildStandardInvoicePdf } from "./standardInvoicePdf";
 
 const A4 = { width: 210, height: 297 };
@@ -424,6 +426,14 @@ export function buildInvoicePdf(detail: InvoiceDetail, options: PdfOptions = {})
   const sigY = y + 26;
   setFont("bold", 8);
   doc.text(`For ${business.business_name}`, A4.width - MARGIN, y + 4, { align: "right" });
+  // uploaded signature sits above the signatory rule (same place as the preview)
+  addSignatureImage(doc, settings.signature_image, {
+    x: A4.width - MARGIN - 60,
+    y: y + 7,
+    w: 60,
+    h: Math.max(sigY - (y + 7) - 2, 6),
+    align: "right",
+  });
   doc.setDrawColor(100, 116, 139);
   doc.line(A4.width - MARGIN - 60, sigY, A4.width - MARGIN, sigY);
   setFont("normal", 8);
@@ -485,10 +495,10 @@ export function invoiceFileName(invoiceNumber: string): string {
   return `${invoiceNumber.replace(/[^A-Za-z0-9-_]/g, "_")}.pdf`;
 }
 
-/** Triggers a browser download of the invoice PDF. */
-export function downloadInvoicePdf(detail: InvoiceDetail, options: PdfOptions = {}): void {
+/** Triggers a browser download of the invoice PDF (works on mobile too). */
+export function downloadInvoicePdf(detail: InvoiceDetail, options: PdfOptions = {}): PdfDelivery {
   const doc = buildInvoicePdf(detail, options);
-  doc.save(options.fileName || invoiceFileName(detail.invoice.invoice_number));
+  return savePdf(doc, options.fileName || invoiceFileName(detail.invoice.invoice_number));
 }
 
 /** Opens the invoice PDF in a new tab (preview). Returns false when blocked. */
